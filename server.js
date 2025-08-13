@@ -1,58 +1,30 @@
-const express = require("express");
-const { createClient } = require("@supabase/supabase-js");
-require("dotenv").config();
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import supabase from "./supabaseClient.js";
+
+dotenv.config();
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY
-);
+// Fetch all gadgets
+app.get("/api/gadgets", async (req, res) => {
+  const { data, error } = await supabase.from("gadgets").select("*");
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
 
-app.post("/products", async (req, res) => {
-  const { name, category, price, description, image_url } = req.body;
+// Add a gadget
+app.post("/api/gadgets", async (req, res) => {
+  const { name, price } = req.body;
   const { data, error } = await supabase
-    .from("products")
-    .insert([{ name, category, price, description, image_url }]);
-
-  if (error) return res.status(400).json(error);
+    .from("gadgets")
+    .insert([{ name, price }]);
+  if (error) return res.status(500).json({ error: error.message });
   res.json(data);
-});
-
-app.get("/products", async (req, res) => {
-  const category = req.query.category;
-  let query = supabase.from("products").select("*");
-
-  if (category) query = query.eq("category", category);
-
-  const { data, error } = await query;
-  if (error) return res.status(400).json(error);
-  res.json(data);
-});
-
-app.put("/products/:id", async (req, res) => {
-  const { id } = req.params;
-  const updates = req.body;
-
-  const { data, error } = await supabase
-    .from("products")
-    .update(updates)
-    .eq("id", id);
-
-  if (error) return res.status(400).json(error);
-  res.json(data);
-});
-
-app.delete("/products/:id", async (req, res) => {
-  const { id } = req.params;
-
-  const { data, error } = await supabase.from("products").delete().eq("id", id);
-
-  if (error) return res.status(400).json(error);
-  res.json({ message: "Deleted successfully" });
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
